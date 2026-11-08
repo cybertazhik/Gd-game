@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Geometry Dash</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #141414;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Настройки игры
+const gravity = 0.6;
+let score = 0;
+
+// Игрок (Куб)
+const player = {
+    x: 100,
+    y: 200,
+    size: 40,
+    velY: 0,
+    jumpStrength: -12,
+    isOnGround: false,
+    color: "#0066cc"
+};
+
+// Препятствие
+const obstacle = {
+    x: canvas.width,
+    y: canvas.height - 60 - 50,
+    width: 30,
+    height: 50,
+    speed: 6,
+    color: "#ff3333"
+};
+
+const groundHeight = 60;
+
+// Функция прыжка
+function jump() {
+    if (player.isOnGround) {
+        player.velY = player.jumpStrength;
+        player.isOnGround = false;
+    }
+}
+
+// Слушатели касаний для телефона и кликов для ПК
+window.addEventListener("touchstart", function(e) {
+    jump();
+    e.preventDefault(); // Запрещает зум экрана при тапе
+}, { passive: false });
+
+window.addEventListener("mousedown", jump);
+window.addEventListener("keydown", function(e) {
+    if (e.code === "Space") jump();
+});
+
+// Главный цикл игры
+function update() {
+    // Физика игрока
+    player.velY += gravity;
+    player.y += player.velY;
+
+    // Проверка пола
+    const groundLevel = canvas.height - groundHeight - player.size;
+    if (player.y >= groundLevel) {
+        player.y = groundLevel;
+        player.velY = 0;
+        player.isOnGround = true;
+    }
+
+    // Движение препятствия
+    obstacle.x -= obstacle.speed;
+    if (obstacle.x < -obstacle.width) {
+        obstacle.x = canvas.width;
+        score++;
+        // Небольшое ускорение с каждым очком
+        obstacle.speed += 0.3;
+    }
+
+    // Проверка столкновений (AABB)
+    if (
+        player.x < obstacle.x + obstacle.width &&
+        player.x + player.size > obstacle.x &&
+        player.y < obstacle.y + obstacle.height &&
+        player.y + player.size > obstacle.y
+    ) {
+        // Сброс игры при проигрыше
+        score = 0;
+        obstacle.speed = 6;
+        obstacle.x = canvas.width;
+    }
+
+    // Отрисовка
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Пол
+    ctx.fillStyle = "#646464";
+    ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+
+    // Игрок
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+
+    // Препятствие
+    ctx.fillStyle = obstacle.color;
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+    // Счет
+    ctx.fillStyle = "#000000";
+    ctx.font = "24px Arial";
+    ctx.fillText("Счет: " + score, 20, 40);
+
+    requestAnimationFrame(update);
+}
+
+// Запуск
+update();
+</script>
+
+</body>
+</html>
